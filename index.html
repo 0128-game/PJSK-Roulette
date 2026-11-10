@@ -252,13 +252,33 @@
       </div>
     </div>
   </section>
-  <section class="song-list">
-  <div class="song-list-heading">
+  <details class="song-list" open>
+  <summary class="song-list-heading">
     <h2>条件に合う楽曲</h2>
     <span id="songCount">0曲</span>
+  </summary>
+  <div>
+    <label for="songSearch">楽曲名で検索</label>
+    <input id="songSearch" type="search" placeholder="曲名を入力">
+  </div>
+  <div class="filters">
+    <div>
+      <label for="songSort">並び順</label>
+      <select id="songSort">
+        <option value="default">通常順</option>
+        <option value="title">曲名順</option>
+        <option value="levelAsc">難易度が低い順</option>
+        <option value="levelDesc">難易度が高い順</option>
+      </select>
+    </div>
+    <div>
+      <label>表示する楽曲</label>
+      <label><input id="favoritesOnly" type="checkbox"> お気に入りのみ</label>
+      <label><input id="excludeDrawn" type="checkbox"> 抽選済みを除外</label>
+    </div>
   </div>
   <div id="songList"></div>
-</section>
+</details>
 
   <details class="history">
     <summary>抽選履歴</summary>
@@ -301,6 +321,22 @@ const $ = id => document.getElementById(id);
 let songs = [];
 let previousSongId = null;
 let history = [];
+let drawnIds = new Set();
+let favorites = new Set();
+
+try {
+  favorites = new Set(JSON.parse(localStorage.getItem("prosekaRouletteFavorites") || "[]"));
+} catch {
+  favorites = new Set();
+}
+
+function saveFavorites() {
+  try {
+    localStorage.setItem("prosekaRouletteFavorites", JSON.stringify([...favorites]));
+  } catch {
+    $("status").textContent = "お気に入りを保存できませんでした。";
+  }
+}
 
 async function fetchJson(file) {
   const url = new URL(file, DATA_BASE);
@@ -395,8 +431,14 @@ function getCandidates() {
   const bpmMin = getNumber("bpmMin");
   const bpmMax = getNumber("bpmMax");
   const unit = $("unit").value;
+  const keyword = $("songSearch").value.trim().toLocaleLowerCase();
+  const favoritesOnly = $("favoritesOnly").checked;
+  const excludeDrawn = $("excludeDrawn").checked;
 
-  return songs.filter(song => {
+  let result = songs.filter(song => {
+    if (keyword && !song.title.toLocaleLowerCase().includes(keyword)) return false;
+    if (favoritesOnly && !favorites.has(song.id)) return false;
+    if (excludeDrawn && drawnIds.has(song.id)) return false;
     if (unit && !song.units.includes(unit)) return false;
 
     if (bpmMin !== null || bpmMax !== null) {
@@ -411,6 +453,18 @@ function getCandidates() {
     }
     return true;
   });
+
+  const sort = $("songSort").value;
+  if (sort === "title") {
+    result.sort((a, b) => a.title.localeCompare(b.title, "ja"));
+  } else if (sort === "levelAsc" || sort === "levelDesc") {
+    const getLevel = song => {
+      const levels = Object.values(song.difficulties);
+      return levels.length ? Math.min(...levels) : (sort === "levelAsc" ? Infinity : -Infinity);
+    };
+    result.sort((a, b) => sort === "levelAsc" ? getLevel(a) - getLevel(b) : getLevel(b) - getLevel(a));
+  }
+  return result;
 }
 
 function updateCandidateCount() {
@@ -458,7 +512,26 @@ function updateCandidateCount() {
 
     info.textContent = levels;
 
-    item.append(name, info);
+    const right = document.createElement("span");
+    right.style.display = "flex";
+    right.style.alignItems = "center";
+    right.style.gap = "8px";
+    right.append(info);
+
+    const favoriteButton = document.createElement("button");
+    favoriteButton.type = "button";
+    favoriteButton.className = "quiet-button";
+    favoriteButton.textContent = favorites.has(song.id) ? "★" : "☆";
+    favoriteButton.setAttribute("aria-label", favorites.has(song.id) ? "お気に入りを解除" : "お気に入りに追加");
+    favoriteButton.addEventListener("click", event => {
+      event.stopPropagation();
+      if (favorites.has(song.id)) favorites.delete(song.id);
+      else favorites.add(song.id);
+      saveFavorites();
+      updateCandidateCount();
+    });
+    right.append(favoriteButton);
+    item.append(name, right);
 
     // 曲名をクリックすると、その曲を抽選結果に表示
     item.addEventListener("click", () => {
@@ -499,6 +572,7 @@ function drawSong() {
   const selected = pool[Math.floor(Math.random() * pool.length)];
 
   previousSongId = selected.id;
+  drawnIds.add(selected.id);
   showSong(selected);
   history.unshift(selected.title);
   history = history.slice(0, 15);
@@ -524,14 +598,17 @@ function renderHistory() {
 $("drawButton").addEventListener("click", drawSong);
 $("refreshButton").addEventListener("click", loadSongs);
 $("resetButton").addEventListener("click", () => {
-  ["difficulty", "levelMin", "levelMax", "bpmMin", "bpmMax", "unit"].forEach(id => { $(id).value = ""; });
+  ["difficulty", "levelMin", "levelMax", "bpmMin", "bpmMax", "unit", "songSearch"].forEach(id => { $(id).value = ""; });
+  $("songSort").value = "default";
+  $("favoritesOnly").checked = false;
+  $("excludeDrawn").checked = false;
   updateCandidateCount();
 });
 $("clearHistoryButton").addEventListener("click", () => {
   history = [];
   renderHistory();
 });
-["difficulty", "levelMin", "levelMax", "bpmMin", "bpmMax", "unit"].forEach(id => {
+["difficulty", "levelMin", "levelMax", "bpmMin", "bpmMax", "unit", "songSearch", "songSort", "favoritesOnly", "excludeDrawn"].forEach(id => {
   $(id).addEventListener("input", updateCandidateCount);
   $(id).addEventListener("change", updateCandidateCount);
 });
