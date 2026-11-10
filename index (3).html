@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17142b">
+  <title>プロセカ楽曲ルーレット</title>
+  <style>
+    :root{color-scheme:dark;--bg:#17142b;--panel:#24203d;--line:#494267;--text:#f7f4ff;--muted:#bcb5d7;--accent:#b79cff;--pink:#ff91c8}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:var(--text);background:radial-gradient(ellipse at top,#39305f 0,#17142b 58%);padding:28px 16px}
+    main{max-width:820px;margin:auto}
+    header{text-align:center;margin:10px 0 24px}
+    h1{font-size:clamp(1.65rem,5vw,2.5rem);margin:0 0 8px}
+    header p,.muted{color:var(--muted)}
+    .panel{background:#24203ddd;border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 12px 35px #08061555}
+    .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    label{display:block;font-size:.9rem;color:var(--muted);margin-bottom:6px}
+    select,input{width:100%;min-width:0;background:#17142b;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit}
+    .range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    button{border:0;border-radius:12px;padding:13px 18px;font:inherit;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .primary{width:100%;color:#211733;background:linear-gradient(100deg,var(--accent),var(--pink));font-size:1.1rem;margin-top:16px}
+    .secondary{background:#393253;color:var(--text);border:1px solid var(--line)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .result{text-align:center;min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+    .song-title{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;overflow-wrap:anywhere;margin:8px 0}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .chip{border:1px solid var(--line);background:#17142b;border-radius:999px;padding:5px 10px;font-size:.85rem;color:#e8e0ff}
+    #status{white-space:pre-wrap;font-size:.9rem;color:var(--muted);margin-top:12px}
+    #history{margin:8px 0 0;padding-left:1.3rem;color:var(--muted)}
+    footer{text-align:center;color:var(--muted);font-size:.8rem;margin:24px 0}
+    @media(max-width:560px){.filters{grid-template-columns:1fr}.panel{padding:16px}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🎵 プロセカ楽曲ルーレット</h1>
+    <p>条件を指定して、楽曲をランダムに選ぼう！</p>
+  </header>
+
+  <section class="panel">
+    <h2>絞り込み条件</h2>
+    <div class="filters">
+      <div>
+        <label for="difficulty">難易度</label>
+        <select id="difficulty">
+          <option value="">指定なし</option>
+          <option value="easy">EASY</option><option value="normal">NORMAL</option>
+          <option value="hard">HARD</option><option value="expert">EXPERT</option>
+          <option value="master">MASTER</option><option value="append">APPEND</option>
+        </select>
+      </div>
+      <div>
+        <label>レベル範囲</label>
+        <div class="range"><input id="levelMin" type="number" min="1" max="40" placeholder="下限"><input id="levelMax" type="number" min="1" max="40" placeholder="上限"></div>
+      </div>
+      <div>
+        <label>BPM範囲</label>
+        <div class="range"><input id="bpmMin" type="number" min="1" placeholder="下限"><input id="bpmMax" type="number" min="1" placeholder="上限"></div>
+      </div>
+      <div>
+        <label for="unit">ユニット</label>
+        <select id="unit">
+          <option value="">指定なし</option>
+          <option value="piapro">バーチャル・シンガー</option>
+          <option value="light_sound">Leo/need</option>
+          <option value="idol">MORE MORE JUMP！</option>
+          <option value="street">Vivid BAD SQUAD</option>
+          <option value="theme_park">ワンダーランズ×ショウタイム</option>
+          <option value="school_refusal">25時、ナイトコードで。</option>
+        </select>
+      </div>
+    </div>
+    <button class="primary" id="draw" disabled>データ読み込み中…</button>
+    <div class="actions">
+      <button class="secondary" id="reset">条件をリセット</button>
+      <button class="secondary" id="reload">楽曲データを更新</button>
+    </div>
+    <div id="status" role="status">データを読み込んでいます。</div>
+  </section>
+
+  <section class="panel result" aria-live="polite">
+    <div class="muted">今回選ばれた楽曲</div>
+    <div id="songTitle" class="song-title">まだ抽選していません</div>
+    <div id="songMeta" class="meta"></div>
+  </section>
+
+  <section class="panel">
+    <h2>抽選履歴</h2>
+    <ol id="history"><li class="muted">履歴はありません</li></ol>
+    <div class="actions"><button class="secondary" id="clearHistory">履歴を消去</button></div>
+  </section>
+
+  <footer>
+    非公式ファンツールです。楽曲データは Sekai-World の公開データを利用しています。<br>
+    BPMは公開データから自動取得していないため、下の設定欄に登録した曲のみBPM条件で抽選されます。
+  </footer>
+</main>
+
+<script>
+"use strict";
+
+// データ元。ページを開いたままの場合、6時間ごとに再取得します。
+const DATA_BASE = "https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/";
+const REFRESH_MS = 6 * 60 * 60 * 1000;
+const FILES = {
+  musics: "musics.json",
+  difficulties: "musicDifficulties.json",
+  vocals: "musicVocals.json",
+  characters: "gameCharacters.json"
+};
+
+// BPMが分かる曲は { 楽曲ID: BPM } の形で追加してください。
+// 例: 1: 150,
+const BPM_BY_MUSIC_ID = {};
+
+const UNIT_NAMES = {
+  piapro: "バーチャル・シンガー",
+  light_sound: "Leo/need",
+  idol: "MORE MORE JUMP！",
+  street: "Vivid BAD SQUAD",
+  theme_park: "ワンダーランズ×ショウタイム",
+  school_refusal: "25時、ナイトコードで。"
+};
+const PROJECT_UNITS = ["light_sound","idol","street","theme_park","school_refusal"];
+const $ = id => document.getElementById(id);
+let songs = [];
+let previousId = null;
+let history = [];
+
+async function fetchData(file) {
+  const url = new URL(file, DATA_BASE);
+  url.searchParams.set("_", Date.now());
+  const response = await fetch(url, {cache:"no-store"});
+  if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
+  return response.json();
+}
+
+function makeDifficultyMap(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    if (!map.has(row.musicId)) map.set(row.musicId, {});
+    map.get(row.musicId)[String(row.musicDifficulty).toLowerCase()] = Number(row.playLevel);
+  }
+  return map;
+}
+
+function makeCharacterMap(rows) {
+  return new Map(rows.map(c => [c.id, c.unit]));
+}
+
+function classifyUnits(musicId, vocals, characterMap) {
+  const related = vocals.filter(v => v.musicId === musicId);
+  // SEKAI版の歌唱メンバーを優先。なければ原曲版を使う。
+  const selected = related.filter(v => String(v.musicVocalType).toLowerCase().includes("sekai"));
+  const fallback = related.filter(v => String(v.musicVocalType).toLowerCase().includes("original"));
+  const chosen = selected.length ? selected : fallback.length ? fallback : related;
+  const units = new Set();
+  let hasPiapro = false;
+
+  for (const vocal of chosen) {
+    for (const singer of (vocal.characters || [])) {
+      const type = String(singer.characterType || "").toLowerCase();
+      if (type && !type.includes("game")) continue;
+      const unit = characterMap.get(singer.characterId);
+      if (unit === "piapro") hasPiapro = true;
+      else if (PROJECT_UNITS.includes(unit)) units.add(unit);
+    }
+  }
+  if (units.size) return [...units];
+  return hasPiapro ? ["piapro"] : [];
+}
+
+async function loadDatabase() {
+  $("draw").disabled = true;
+  $("draw").textContent = "データ読み込み中…";
+  $("status").textContent = "GitHubから楽曲データを取得しています。";
+  try {
+    const [musicRows, difficultyRows, vocalRows, characterRows] = await Promise.all([
+      fetchData(FILES.musics), fetchData(FILES.difficulties),
+      fetchData(FILES.vocals), fetchData(FILES.characters)
+    ]);
+    const difficultyMap = makeDifficultyMap(difficultyRows);
+    const characterMap = makeCharacterMap(characterRows);
+    songs = musicRows.map(m => ({
+      id: m.id,
+      title: m.title || `楽曲ID ${m.id}`,
+      difficulties: difficultyMap.get(m.id) || {},
+      bpm: BPM_BY_MUSIC_ID[m.id] ?? null,
+      units: classifyUnits(m.id, vocalRows, characterMap)
+    }));
+    $("status").textContent = `読み込み完了：${songs.length.toLocaleString()}曲 / 難易度データ ${difficultyRows.length.toLocaleString()}件`;
+    $("draw").disabled = false;
+    $("draw").textContent = "🎲 ルーレットを回す";
+    updateCandidateCount();
+    return true;
+  } catch (error) {
+    $("status").textContent = `データの読み込みに失敗しました。\n${error.message}\nページを再読み込みするか、時間をおいて再試行してください。`;
+    $("draw").textContent = "読み込み失敗";
+    return false;
+  }
+}
+
+function numberOrNull(id) {
+  const value = $(id).value.trim();
+  return value === "" ? null : Number(value);
+}
+function inRange(value, min, max) {
+  return (min === null || value >= min) && (max === null || value <= max);
+}
+function getCandidates() {
+  const difficulty = $("difficulty").value;
+  const levelMin = numberOrNull("levelMin"), levelMax = numberOrNull("levelMax");
+  const bpmMin = numberOrNull("bpmMin"), bpmMax = numberOrNull("bpmMax");
+  const unit = $("unit").value;
+
+  return songs.filter(song => {
+    if (unit && !song.units.includes(unit)) return false;
+    if (bpmMin !== null || bpmMax !== null) {
+      if (song.bpm === null || !inRange(song.bpm, bpmMin, bpmMax)) return false;
+    }
+    if (difficulty) {
+      const level = song.difficulties[difficulty];
+      if (level === undefined) return false;
+      if (!inRange(level, levelMin, levelMax)) return false;
+    } else if (levelMin !== null || levelMax !== null) {
+      const levels = Object.values(song.difficulties);
+      if (!levels.some(level => inRange(level, levelMin, levelMax))) return false;
+    }
+    return true;
+  });
+}
+
+function updateCandidateCount() {
+  if (!songs.length) return;
+  const count = getCandidates().length;
+  $("status").textContent = `読み込み完了：${songs.length.toLocaleString()}曲 / 条件に合う曲：${count.toLocaleString()}曲`;
+  $("draw").disabled = count === 0;
+}
+function drawSong() {
+  const candidates = getCandidates();
+  if (!candidates.length) {
+    $("songTitle").textContent = "条件に合う楽曲がありません";
+    $("songMeta").replaceChildren();
+    return;
+  }
+  let pool = candidates.length > 1 ? candidates.filter(s => s.id !== previousId) : candidates;
+  const song = pool[Math.floor(Math.random() * pool.length)];
+  previousId = song.id;
+  $("songTitle").textContent = song.title;
+  const meta = [];
+  for (const [key, level] of Object.entries(song.difficulties)) {
+    meta.push(`${key.toUpperCase()} ${level}`);
+  }
+  if (song.bpm !== null) meta.push(`BPM ${song.bpm}`);
+  const unitNames = song.units.map(u => UNIT_NAMES[u]).filter(Boolean);
+  if (unitNames.length) meta.push(...unitNames);
+  $("songMeta").replaceChildren(...meta.map(value => {
+    const span = document.createElement("span");
+    span.className = "chip"; span.textContent = value; return span;
+  }));
+  history.unshift(song.title);
+  history = history.slice(0, 10);
+  renderHistory();
+}
+function renderHistory() {
+  const list = $("history");
+  list.replaceChildren();
+  if (!history.length) {
+    const li = document.createElement("li"); li.className = "muted"; li.textContent = "履歴はありません"; list.append(li); return;
+  }
+  history.forEach(title => { const li = document.createElement("li"); li.textContent = title; list.append(li); });
+}
+
+$("draw").addEventListener("click", drawSong);
+$("reload").addEventListener("click", loadDatabase);
+$("reset").addEventListener("click", () => {
+  ["difficulty","levelMin","levelMax","bpmMin","bpmMax","unit"].forEach(id => $(id).value = "");
+  updateCandidateCount();
+});
+$("clearHistory").addEventListener("click", () => { history = []; renderHistory(); });
+["difficulty","levelMin","levelMax","bpmMin","bpmMax","unit"].forEach(id => {
+  $(id).addEventListener("input", updateCandidateCount);
+  $(id).addEventListener("change", updateCandidateCount);
+});
+
+loadDatabase();
+setInterval(loadDatabase, REFRESH_MS);
+</script>
+</body>
+</html>
