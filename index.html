@@ -1,64 +1,242 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#17142b">
-  <title>プロセカ楽曲ルーレット</title>
-  <style>
-    :root{color-scheme:dark;--bg:#17142b;--panel:#24203d;--line:#494267;--text:#f7f4ff;--muted:#bcb5d7;--accent:#b79cff;--pink:#ff91c8}
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;color:var(--text);background:radial-gradient(ellipse at top,#39305f 0,#17142b 58%);padding:28px 16px}
-    main{max-width:820px;margin:auto}
-    header{text-align:center;margin:10px 0 24px}
-    h1{font-size:clamp(1.65rem,5vw,2.5rem);margin:0 0 8px}
-    header p,.muted{color:var(--muted)}
-    .panel{background:#24203ddd;border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 12px 35px #08061555}
-    .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-    label{display:block;font-size:.9rem;color:var(--muted);margin-bottom:6px}
-    select,input{width:100%;min-width:0;background:#17142b;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit}
-    .range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    button{border:0;border-radius:12px;padding:13px 18px;font:inherit;font-weight:700;cursor:pointer}
-    button:disabled{opacity:.45;cursor:not-allowed}
-    .primary{width:100%;color:#211733;background:linear-gradient(100deg,var(--accent),var(--pink));font-size:1.1rem;margin-top:16px}
-    .secondary{background:#393253;color:var(--text);border:1px solid var(--line)}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .result{text-align:center;min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center}
-    .song-title{font-size:clamp(1.4rem,5vw,2rem);font-weight:800;overflow-wrap:anywhere;margin:8px 0}
-    .meta{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-    .chip{border:1px solid var(--line);background:#17142b;border-radius:999px;padding:5px 10px;font-size:.85rem;color:#e8e0ff}
-    #status{white-space:pre-wrap;font-size:.9rem;color:var(--muted);margin-top:12px}
-    #history{margin:8px 0 0;padding-left:1.3rem;color:var(--muted)}
-    footer{text-align:center;color:var(--muted);font-size:.8rem;margin:24px 0}
-    @media(max-width:560px){.filters{grid-template-columns:1fr}.panel{padding:16px}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f7f4">
+<title>プロセカ楽曲ルーレット</title>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #f7f7f4;
+    --surface: #ffffff;
+    --ink: #292929;
+    --sub: #777770;
+    --line: #e6e6df;
+    --accent: #6757a5;
+    --accent-hover: #57488f;
+    --soft: #f0eef7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    line-height: 1.6;
+  }
+  main { width: min(760px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 48px; }
+  header { margin: 0 0 22px; }
+  h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: .02em; margin: 0; }
+  .lead { margin: 4px 0 0; color: var(--sub); font-size: .88rem; }
+  .draw-area {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 34px 24px 26px;
+    text-align: center;
+  }
+  .result-label { color: var(--sub); font-size: .85rem; }
+  #songTitle {
+    min-height: 2.2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 12px 0 8px;
+    font-size: clamp(1.7rem, 5.5vw, 2.55rem);
+    font-weight: 750;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  #songMeta {
+    min-height: 26px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 8px;
+    color: var(--sub);
+    font-size: .8rem;
+  }
+  .meta-item:not(:last-child)::after { content: "・"; margin-left: 8px; color: #c3c3bc; }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .draw-button {
+    display: block;
+    width: min(300px, 100%);
+    margin: 24px auto 0;
+    padding: 14px 20px;
+    border: 0;
+    background: var(--accent);
+    color: white;
+    font-size: 1.02rem;
+    font-weight: 700;
+    transition: background .15s ease;
+  }
+  .draw-button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .minor-actions { display: flex; justify-content: center; gap: 8px; margin-top: 13px; }
+  .quiet-button {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--sub);
+    padding: 6px 11px;
+    font-size: .78rem;
+  }
+  .quiet-button:hover { background: #f2f2ee; color: var(--ink); }
+  #status { margin: 12px 0 0; min-height: 1.4em; color: var(--sub); font-size: .76rem; }
+  .settings {
+    margin-top: 26px;
+    padding: 18px 20px 20px;
+    border-top: 1px solid var(--line);
+  }
+  .settings-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  h2 { margin: 0; font-size: .95rem; font-weight: 700; }
+  .settings-note { color: var(--sub); font-size: .75rem; }
+  .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+  label { display: block; margin-bottom: 4px; color: var(--sub); font-size: .77rem; }
+  select, input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #deded7;
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    padding: 8px 9px;
+    font: inherit;
+    font-size: .85rem;
+  }
+  select:focus, input:focus, button:focus-visible { outline: 2px solid #a69bd0; outline-offset: 2px; }
+  .range { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .history {
+    margin-top: 16px;
+    padding: 0 20px;
+    color: var(--sub);
+    font-size: .78rem;
+  }
+  .history summary { cursor: pointer; width: fit-content; }
+  #historyList { margin: 8px 0 0; padding-left: 1.5rem; }
+  footer { margin-top: 24px; text-align: center; color: #92928a; font-size: .7rem; }
+  @media (max-width: 520px) {
+    main { padding-top: 26px; }
+    .draw-area { padding: 28px 16px 22px; }
+    .filters { grid-template-columns: 1fr; gap: 10px; }
+    .settings { padding-inline: 4px; }
+    .history { padding-inline: 4px; }
+  }
+  .song-list {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.song-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.song-list-heading h2 {
+  margin: 0;
+  font-size: .95rem;
+}
+
+#songCount {
+  color: var(--sub);
+  font-size: .78rem;
+}
+
+#songList {
+  border-top: 1px solid var(--line);
+}
+
+.song-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.song-item:hover {
+  background: #f0eef7;
+}
+
+.song-item-name {
+  font-size: .86rem;
+  font-weight: 600;
+}
+
+.song-item-info {
+  color: var(--sub);
+  font-size: .72rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.song-empty {
+  padding: 18px 4px;
+  color: var(--sub);
+  font-size: .82rem;
+  text-align: center;
+}
+</style>
 </head>
 <body>
 <main>
   <header>
-    <h1>🎵 プロセカ楽曲ルーレット</h1>
-    <p>条件を指定して、楽曲をランダムに選ぼう！</p>
+    <h1>プロセカ楽曲ルーレット</h1>
+    <p class="lead">条件を決めて、今日の一曲を選ぼう。</p>
   </header>
 
-  <section class="panel">
-    <h2>絞り込み条件</h2>
+  <section class="draw-area" aria-live="polite">
+    <div class="result-label">抽選結果</div>
+    <div id="songTitle">ここに楽曲名が表示されます</div>
+    <div id="songMeta"></div>
+    <button class="draw-button" id="drawButton" disabled>データ読み込み中…</button>
+    <div class="minor-actions">
+      <button class="quiet-button" id="refreshButton">データを更新</button>
+      <button class="quiet-button" id="resetButton">条件をリセット</button>
+    </div>
+    <p id="status" role="status">楽曲データを読み込んでいます。</p>
+  </section>
+
+  <section class="settings">
+    <div class="settings-heading">
+      <h2>抽選条件</h2>
+      <span class="settings-note">指定しない項目はすべて対象</span>
+    </div>
     <div class="filters">
       <div>
         <label for="difficulty">難易度</label>
         <select id="difficulty">
           <option value="">指定なし</option>
-          <option value="easy">EASY</option><option value="normal">NORMAL</option>
-          <option value="hard">HARD</option><option value="expert">EXPERT</option>
-          <option value="master">MASTER</option><option value="append">APPEND</option>
+          <option value="easy">EASY</option>
+          <option value="normal">NORMAL</option>
+          <option value="hard">HARD</option>
+          <option value="expert">EXPERT</option>
+          <option value="master">MASTER</option>
+          <option value="append">APPEND</option>
         </select>
       </div>
       <div>
-        <label>レベル範囲</label>
-        <div class="range"><input id="levelMin" type="number" min="1" max="40" placeholder="下限"><input id="levelMax" type="number" min="1" max="40" placeholder="上限"></div>
+        <label>レベル</label>
+        <div class="range">
+          <input id="levelMin" type="number" min="1" max="40" placeholder="下限">
+          <input id="levelMax" type="number" min="1" max="40" placeholder="上限">
+        </div>
       </div>
       <div>
-        <label>BPM範囲</label>
-        <div class="range"><input id="bpmMin" type="number" min="1" placeholder="下限"><input id="bpmMax" type="number" min="1" placeholder="上限"></div>
+        <label>BPM</label>
+        <div class="range">
+          <input id="bpmMin" type="number" min="1" placeholder="下限">
+          <input id="bpmMax" type="number" min="1" placeholder="上限">
+        </div>
       </div>
       <div>
         <label for="unit">ユニット</label>
@@ -73,46 +251,39 @@
         </select>
       </div>
     </div>
-    <button class="primary" id="draw" disabled>データ読み込み中…</button>
-    <div class="actions">
-      <button class="secondary" id="reset">条件をリセット</button>
-      <button class="secondary" id="reload">楽曲データを更新</button>
-    </div>
-    <div id="status" role="status">データを読み込んでいます。</div>
   </section>
+  <section class="song-list">
+  <div class="song-list-heading">
+    <h2>条件に合う楽曲</h2>
+    <span id="songCount">0曲</span>
+  </div>
+  <div id="songList"></div>
+</section>
 
-  <section class="panel result" aria-live="polite">
-    <div class="muted">今回選ばれた楽曲</div>
-    <div id="songTitle" class="song-title">まだ抽選していません</div>
-    <div id="songMeta" class="meta"></div>
-  </section>
-
-  <section class="panel">
-    <h2>抽選履歴</h2>
-    <ol id="history"><li class="muted">履歴はありません</li></ol>
-    <div class="actions"><button class="secondary" id="clearHistory">履歴を消去</button></div>
-  </section>
+  <details class="history">
+    <summary>抽選履歴</summary>
+    <ol id="historyList"><li>まだ履歴はありません</li></ol>
+    <button class="quiet-button" id="clearHistoryButton" style="margin-top:8px">履歴を消去</button>
+  </details>
 
   <footer>
-    非公式ファンツールです。楽曲データは Sekai-World の公開データを利用しています。<br>
-    BPMは公開データから自動取得していないため、下の設定欄に登録した曲のみBPM条件で抽選されます。
+    非公式ファンツール / 楽曲データ：Sekai-World
   </footer>
 </main>
 
 <script>
 "use strict";
 
-// データ元。ページを開いたままの場合、6時間ごとに再取得します。
 const DATA_BASE = "https://raw.githubusercontent.com/Sekai-World/sekai-master-db-diff/main/";
-const REFRESH_MS = 6 * 60 * 60 * 1000;
-const FILES = {
+const REFRESH_INTERVAL = 6 * 60 * 60 * 1000;
+const DATA_FILES = {
   musics: "musics.json",
   difficulties: "musicDifficulties.json",
   vocals: "musicVocals.json",
   characters: "gameCharacters.json"
 };
 
-// BPMが分かる曲は { 楽曲ID: BPM } の形で追加してください。
+// BPMが分かる曲は { 楽曲ID: BPM } の形式で追加できます。
 // 例: 1: 150,
 const BPM_BY_MUSIC_ID = {};
 
@@ -124,21 +295,22 @@ const UNIT_NAMES = {
   theme_park: "ワンダーランズ×ショウタイム",
   school_refusal: "25時、ナイトコードで。"
 };
-const PROJECT_UNITS = ["light_sound","idol","street","theme_park","school_refusal"];
+const PROJECT_UNITS = ["light_sound", "idol", "street", "theme_park", "school_refusal"];
 const $ = id => document.getElementById(id);
+
 let songs = [];
-let previousId = null;
+let previousSongId = null;
 let history = [];
 
-async function fetchData(file) {
+async function fetchJson(file) {
   const url = new URL(file, DATA_BASE);
-  url.searchParams.set("_", Date.now());
-  const response = await fetch(url, {cache:"no-store"});
-  if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
+  url.searchParams.set("v", Date.now());
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error(`${file} の取得に失敗しました（${response.status}）`);
   return response.json();
 }
 
-function makeDifficultyMap(rows) {
+function createDifficultyMap(rows) {
   const map = new Map();
   for (const row of rows) {
     if (!map.has(row.musicId)) map.set(row.musicId, {});
@@ -147,20 +319,19 @@ function makeDifficultyMap(rows) {
   return map;
 }
 
-function makeCharacterMap(rows) {
-  return new Map(rows.map(c => [c.id, c.unit]));
+function createCharacterMap(rows) {
+  return new Map(rows.map(character => [character.id, character.unit]));
 }
 
-function classifyUnits(musicId, vocals, characterMap) {
-  const related = vocals.filter(v => v.musicId === musicId);
-  // SEKAI版の歌唱メンバーを優先。なければ原曲版を使う。
-  const selected = related.filter(v => String(v.musicVocalType).toLowerCase().includes("sekai"));
-  const fallback = related.filter(v => String(v.musicVocalType).toLowerCase().includes("original"));
-  const chosen = selected.length ? selected : fallback.length ? fallback : related;
+function getSongUnits(musicId, vocals, characterMap) {
+  const related = vocals.filter(vocal => vocal.musicId === musicId);
+  const sekai = related.filter(vocal => String(vocal.musicVocalType).toLowerCase().includes("sekai"));
+  const original = related.filter(vocal => String(vocal.musicVocalType).toLowerCase().includes("original"));
+  const selected = sekai.length ? sekai : original.length ? original : related;
   const units = new Set();
   let hasPiapro = false;
 
-  for (const vocal of chosen) {
+  for (const vocal of selected) {
     for (const singer of (vocal.characters || [])) {
       const type = String(singer.characterType || "").toLowerCase();
       if (type && !type.includes("game")) continue;
@@ -173,61 +344,70 @@ function classifyUnits(musicId, vocals, characterMap) {
   return hasPiapro ? ["piapro"] : [];
 }
 
-async function loadDatabase() {
-  $("draw").disabled = true;
-  $("draw").textContent = "データ読み込み中…";
+async function loadSongs() {
+  const drawButton = $("drawButton");
+  drawButton.disabled = true;
+  drawButton.textContent = "読み込み中…";
   $("status").textContent = "GitHubから楽曲データを取得しています。";
+
   try {
     const [musicRows, difficultyRows, vocalRows, characterRows] = await Promise.all([
-      fetchData(FILES.musics), fetchData(FILES.difficulties),
-      fetchData(FILES.vocals), fetchData(FILES.characters)
+      fetchJson(DATA_FILES.musics),
+      fetchJson(DATA_FILES.difficulties),
+      fetchJson(DATA_FILES.vocals),
+      fetchJson(DATA_FILES.characters)
     ]);
-    const difficultyMap = makeDifficultyMap(difficultyRows);
-    const characterMap = makeCharacterMap(characterRows);
-    songs = musicRows.map(m => ({
-      id: m.id,
-      title: m.title || `楽曲ID ${m.id}`,
-      difficulties: difficultyMap.get(m.id) || {},
-      bpm: BPM_BY_MUSIC_ID[m.id] ?? null,
-      units: classifyUnits(m.id, vocalRows, characterMap)
+
+    const difficultyMap = createDifficultyMap(difficultyRows);
+    const characterMap = createCharacterMap(characterRows);
+
+    songs = musicRows.map(music => ({
+      id: music.id,
+      title: music.title || `楽曲ID ${music.id}`,
+      difficulties: difficultyMap.get(music.id) || {},
+      bpm: BPM_BY_MUSIC_ID[music.id] ?? null,
+      units: getSongUnits(music.id, vocalRows, characterMap)
     }));
-    $("status").textContent = `読み込み完了：${songs.length.toLocaleString()}曲 / 難易度データ ${difficultyRows.length.toLocaleString()}件`;
-    $("draw").disabled = false;
-    $("draw").textContent = "🎲 ルーレットを回す";
+
+    drawButton.textContent = "抽選する";
     updateCandidateCount();
-    return true;
   } catch (error) {
-    $("status").textContent = `データの読み込みに失敗しました。\n${error.message}\nページを再読み込みするか、時間をおいて再試行してください。`;
-    $("draw").textContent = "読み込み失敗";
-    return false;
+    $("status").textContent = `データを読み込めませんでした。時間をおいて再試行してください。\n${error.message}`;
+    drawButton.textContent = "読み込み失敗";
+  } finally {
+    if (songs.length) drawButton.disabled = getCandidates().length === 0;
   }
 }
 
-function numberOrNull(id) {
+function getNumber(id) {
   const value = $(id).value.trim();
   return value === "" ? null : Number(value);
 }
-function inRange(value, min, max) {
+
+function matchesRange(value, min, max) {
   return (min === null || value >= min) && (max === null || value <= max);
 }
+
 function getCandidates() {
   const difficulty = $("difficulty").value;
-  const levelMin = numberOrNull("levelMin"), levelMax = numberOrNull("levelMax");
-  const bpmMin = numberOrNull("bpmMin"), bpmMax = numberOrNull("bpmMax");
+  const levelMin = getNumber("levelMin");
+  const levelMax = getNumber("levelMax");
+  const bpmMin = getNumber("bpmMin");
+  const bpmMax = getNumber("bpmMax");
   const unit = $("unit").value;
 
   return songs.filter(song => {
     if (unit && !song.units.includes(unit)) return false;
+
     if (bpmMin !== null || bpmMax !== null) {
-      if (song.bpm === null || !inRange(song.bpm, bpmMin, bpmMax)) return false;
+      if (song.bpm === null || !matchesRange(song.bpm, bpmMin, bpmMax)) return false;
     }
+
     if (difficulty) {
       const level = song.difficulties[difficulty];
-      if (level === undefined) return false;
-      if (!inRange(level, levelMin, levelMax)) return false;
+      if (level === undefined || !matchesRange(level, levelMin, levelMax)) return false;
     } else if (levelMin !== null || levelMax !== null) {
-      const levels = Object.values(song.difficulties);
-      if (!levels.some(level => inRange(level, levelMin, levelMax))) return false;
+      if (!Object.values(song.difficulties).some(level => matchesRange(level, levelMin, levelMax))) return false;
     }
     return true;
   });
@@ -235,59 +415,129 @@ function getCandidates() {
 
 function updateCandidateCount() {
   if (!songs.length) return;
+
   const count = getCandidates().length;
-  $("status").textContent = `読み込み完了：${songs.length.toLocaleString()}曲 / 条件に合う曲：${count.toLocaleString()}曲`;
-  $("draw").disabled = count === 0;
+
+  $("status").textContent =
+    `${songs.length.toLocaleString()}曲を読み込み済み / 条件に合う曲：${count.toLocaleString()}曲`;
+
+  $("drawButton").disabled = count === 0;
+
+  renderSongList();
 }
+
+  function renderSongList() {
+  const candidates = getCandidates();
+  const list = $("songList");
+
+  $("songCount").textContent = `${candidates.length}曲`;
+  list.replaceChildren();
+
+  if (candidates.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "song-empty";
+    empty.textContent = "条件に合う楽曲がありません。";
+    list.append(empty);
+    return;
+  }
+
+  for (const song of candidates) {
+    const item = document.createElement("div");
+    item.className = "song-item";
+
+    const name = document.createElement("span");
+    name.className = "song-item-name";
+    name.textContent = song.title;
+
+    const info = document.createElement("span");
+    info.className = "song-item-info";
+
+    const levels = Object.entries(song.difficulties)
+      .map(([difficulty, level]) => `${difficulty.toUpperCase()} ${level}`)
+      .join(" / ");
+
+    info.textContent = levels;
+
+    item.append(name, info);
+
+    // 曲名をクリックすると、その曲を抽選結果に表示
+    item.addEventListener("click", () => {
+      previousSongId = song.id;
+      showSong(song);
+    });
+
+    list.append(item);
+  }
+}
+
+
+function showSong(song) {
+  $("songTitle").textContent = song.title;
+  const values = Object.entries(song.difficulties).map(([difficulty, level]) => `${difficulty.toUpperCase()} ${level}`);
+  if (song.bpm !== null) values.push(`BPM ${song.bpm}`);
+  values.push(...song.units.map(unit => UNIT_NAMES[unit]).filter(Boolean));
+
+  $("songMeta").replaceChildren(...values.map(value => {
+    const span = document.createElement("span");
+    span.className = "meta-item";
+    span.textContent = value;
+    return span;
+  }));
+}
+
 function drawSong() {
   const candidates = getCandidates();
   if (!candidates.length) {
-    $("songTitle").textContent = "条件に合う楽曲がありません";
+    $("songTitle").textContent = "条件に合う曲がありません";
     $("songMeta").replaceChildren();
     return;
   }
-  let pool = candidates.length > 1 ? candidates.filter(s => s.id !== previousId) : candidates;
-  const song = pool[Math.floor(Math.random() * pool.length)];
-  previousId = song.id;
-  $("songTitle").textContent = song.title;
-  const meta = [];
-  for (const [key, level] of Object.entries(song.difficulties)) {
-    meta.push(`${key.toUpperCase()} ${level}`);
-  }
-  if (song.bpm !== null) meta.push(`BPM ${song.bpm}`);
-  const unitNames = song.units.map(u => UNIT_NAMES[u]).filter(Boolean);
-  if (unitNames.length) meta.push(...unitNames);
-  $("songMeta").replaceChildren(...meta.map(value => {
-    const span = document.createElement("span");
-    span.className = "chip"; span.textContent = value; return span;
-  }));
-  history.unshift(song.title);
-  history = history.slice(0, 10);
+
+  const pool = candidates.length > 1
+    ? candidates.filter(song => song.id !== previousSongId)
+    : candidates;
+  const selected = pool[Math.floor(Math.random() * pool.length)];
+
+  previousSongId = selected.id;
+  showSong(selected);
+  history.unshift(selected.title);
+  history = history.slice(0, 15);
   renderHistory();
 }
+
 function renderHistory() {
-  const list = $("history");
+  const list = $("historyList");
   list.replaceChildren();
   if (!history.length) {
-    const li = document.createElement("li"); li.className = "muted"; li.textContent = "履歴はありません"; list.append(li); return;
+    const item = document.createElement("li");
+    item.textContent = "まだ履歴はありません";
+    list.append(item);
+    return;
   }
-  history.forEach(title => { const li = document.createElement("li"); li.textContent = title; list.append(li); });
+  for (const title of history) {
+    const item = document.createElement("li");
+    item.textContent = title;
+    list.append(item);
+  }
 }
 
-$("draw").addEventListener("click", drawSong);
-$("reload").addEventListener("click", loadDatabase);
-$("reset").addEventListener("click", () => {
-  ["difficulty","levelMin","levelMax","bpmMin","bpmMax","unit"].forEach(id => $(id).value = "");
+$("drawButton").addEventListener("click", drawSong);
+$("refreshButton").addEventListener("click", loadSongs);
+$("resetButton").addEventListener("click", () => {
+  ["difficulty", "levelMin", "levelMax", "bpmMin", "bpmMax", "unit"].forEach(id => { $(id).value = ""; });
   updateCandidateCount();
 });
-$("clearHistory").addEventListener("click", () => { history = []; renderHistory(); });
-["difficulty","levelMin","levelMax","bpmMin","bpmMax","unit"].forEach(id => {
+$("clearHistoryButton").addEventListener("click", () => {
+  history = [];
+  renderHistory();
+});
+["difficulty", "levelMin", "levelMax", "bpmMin", "bpmMax", "unit"].forEach(id => {
   $(id).addEventListener("input", updateCandidateCount);
   $(id).addEventListener("change", updateCandidateCount);
 });
 
-loadDatabase();
-setInterval(loadDatabase, REFRESH_MS);
+loadSongs();
+setInterval(loadSongs, REFRESH_INTERVAL);
 </script>
 </body>
 </html>
