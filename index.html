@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ja">
 <head>
@@ -127,64 +128,51 @@
     .history { padding-inline: 4px; }
   }
   .song-list {
-  margin-top: 24px;
-  padding: 18px 20px;
-  border-top: 1px solid var(--line);
-}
-
-.song-list-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.song-list-heading h2 {
-  margin: 0;
-  font-size: .95rem;
-}
-
-#songCount {
-  color: var(--sub);
-  font-size: .78rem;
-}
-
-#songList {
-  border-top: 1px solid var(--line);
-}
-
-.song-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-}
-
-.song-item:hover {
-  background: #f0eef7;
-}
-
-.song-item-name {
-  font-size: .86rem;
-  font-weight: 600;
-}
-
-.song-item-info {
-  color: var(--sub);
-  font-size: .72rem;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.song-empty {
-  padding: 18px 4px;
-  color: var(--sub);
-  font-size: .82rem;
-  text-align: center;
-}
+    margin-top: 24px;
+    padding: 18px 20px;
+    border-top: 1px solid var(--line);
+  }
+  .song-list-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .song-list-heading h2 {
+    margin: 0;
+    font-size: .95rem;
+  }
+  #songCount {
+    color: var(--sub);
+    font-size: .78rem;
+  }
+  #songList { border-top: 1px solid var(--line); }
+  .song-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .song-item:hover { background: #f0eef7; }
+  .song-item-name {
+    font-size: .86rem;
+    font-weight: 600;
+  }
+  .song-item-info {
+    color: var(--sub);
+    font-size: .72rem;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .song-empty {
+    padding: 18px 4px;
+    color: var(--sub);
+    font-size: .82rem;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -198,6 +186,7 @@
     <div class="result-label">抽選結果</div>
     <div id="songTitle">ここに楽曲名が表示されます</div>
     <div id="songMeta"></div>
+    <a id="lyricsSearch" class="quiet-button" href="#" target="_blank" rel="noopener noreferrer" hidden style="display:inline-block; margin-top:12px; text-decoration:none;">Googleで歌詞を検索</a>
     <button class="draw-button" id="drawButton" disabled>データ読み込み中…</button>
     <div class="minor-actions">
       <button class="quiet-button" id="refreshButton">データを更新</button>
@@ -252,33 +241,34 @@
       </div>
     </div>
   </section>
+
   <details class="song-list" open>
-  <summary class="song-list-heading">
-    <h2>条件に合う楽曲</h2>
-    <span id="songCount">0曲</span>
-  </summary>
-  <div>
-    <label for="songSearch">楽曲名で検索</label>
-    <input id="songSearch" type="search" placeholder="曲名を入力">
-  </div>
-  <div class="filters">
+    <summary class="song-list-heading">
+      <h2>条件に合う楽曲</h2>
+      <span id="songCount">0曲</span>
+    </summary>
     <div>
-      <label for="songSort">並び順</label>
-      <select id="songSort">
-        <option value="default">通常順</option>
-        <option value="title">曲名順</option>
-        <option value="levelAsc">難易度が低い順</option>
-        <option value="levelDesc">難易度が高い順</option>
-      </select>
+      <label for="songSearch">楽曲名で検索</label>
+      <input id="songSearch" type="search" placeholder="曲名を入力">
     </div>
-    <div>
-      <label>表示する楽曲</label>
-      <label><input id="favoritesOnly" type="checkbox"> お気に入りのみ</label>
-      <label><input id="excludeDrawn" type="checkbox"> 抽選済みを除外</label>
+    <div class="filters">
+      <div>
+        <label for="songSort">並び順</label>
+        <select id="songSort">
+          <option value="default">通常順</option>
+          <option value="title">曲名順</option>
+          <option value="levelAsc">難易度が低い順</option>
+          <option value="levelDesc">難易度が高い順</option>
+        </select>
+      </div>
+      <div>
+        <label>表示する楽曲</label>
+        <label><input id="favoritesOnly" type="checkbox"> お気に入りのみ</label>
+        <label><input id="excludeDrawn" type="checkbox"> 抽選済みを除外</label>
+      </div>
     </div>
-  </div>
-  <div id="songList"></div>
-</details>
+    <div id="songList"></div>
+  </details>
 
   <details class="history">
     <summary>抽選履歴</summary>
@@ -480,7 +470,7 @@ function updateCandidateCount() {
   renderSongList();
 }
 
-  function renderSongList() {
+function renderSongList() {
   const candidates = getCandidates();
   const list = $("songList");
 
@@ -533,7 +523,6 @@ function updateCandidateCount() {
     right.append(favoriteButton);
     item.append(name, right);
 
-    // 曲名をクリックすると、その曲を抽選結果に表示
     item.addEventListener("click", () => {
       previousSongId = song.id;
       showSong(song);
@@ -543,9 +532,14 @@ function updateCandidateCount() {
   }
 }
 
-
 function showSong(song) {
   $("songTitle").textContent = song.title;
+
+  // 曲名と「歌詞」を組み合わせてGoogle検索
+  const lyricsSearch = $("lyricsSearch");
+  lyricsSearch.href = `https://www.google.com/search?q=${encodeURIComponent(`${song.title} 歌詞`)}`;
+  lyricsSearch.hidden = false;
+
   const values = Object.entries(song.difficulties).map(([difficulty, level]) => `${difficulty.toUpperCase()} ${level}`);
   if (song.bpm !== null) values.push(`BPM ${song.bpm}`);
   values.push(...song.units.map(unit => UNIT_NAMES[unit]).filter(Boolean));
@@ -563,6 +557,7 @@ function drawSong() {
   if (!candidates.length) {
     $("songTitle").textContent = "条件に合う曲がありません";
     $("songMeta").replaceChildren();
+    $("lyricsSearch").hidden = true;
     return;
   }
 
